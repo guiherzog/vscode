@@ -68,6 +68,7 @@ export interface IExplorerView {
 	setEditable(stat: ExplorerItem, isEditing: boolean): Promise<void>;
 	focusNeighbourIfItemFocused(item: ExplorerItem): void;
 	setRoot(resource: URI): void;
+	findAdjacentSibling(stat: ExplorerItem): URI | undefined;
 }
 
 export const IExplorerService = createDecorator<IExplorerService>('explorerService');
