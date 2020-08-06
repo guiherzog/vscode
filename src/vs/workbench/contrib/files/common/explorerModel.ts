@@ -47,6 +47,18 @@ export class ExplorerModel implements IDisposable {
 		return this._onDidChangeRoots.event;
 	}
 
+	async setRoot(resource: URI, sortOrder: SortOrder): Promise<void> {
+		const root = new ExplorerItem(resource, this.fileService, undefined);
+
+		const children = await root.fetchChildren(sortOrder);
+
+		children.forEach(child => {
+			root.addChild(child);
+		});
+
+		this._roots = [root];
+	}
+
 	/**
 	 * Returns an array of child stat from this stat that matches with the provided path.
 	 * Starts matching from the first root.
