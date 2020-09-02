@@ -817,11 +817,11 @@ export class ExplorerView extends ViewPane {
 		const ancestors: URI[] = [];
 		const treeInput = this.tree.getInput() as ExplorerItem;
 		const rootResource = treeInput.resource.toString();
-		let findAncestor: URI = resource;
+		let ancestor: URI = resource;
 
-		while (findAncestor.toString() !== rootResource) {
-			ancestors.push(findAncestor);
-			findAncestor = dirname(findAncestor);
+		while (ancestor.toString() !== rootResource) {
+			ancestors.push(ancestor);
+			ancestor = dirname(ancestor);
 		}
 
 		ancestors.reverse();
@@ -842,7 +842,7 @@ export class ExplorerView extends ViewPane {
 
 		const currentRoot = this.tree.getInput() as ExplorerItem;
 		if (rootResource === currentRoot.resource.toString()) {
-			this.selectActiveFile(/*deselect*/ false, /*reveal*/ true);
+			this.selectResource(resource);
 		}
 	}
 
