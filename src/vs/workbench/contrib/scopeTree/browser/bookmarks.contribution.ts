@@ -21,6 +21,7 @@ import { isEqualOrParent } from 'vs/base/common/resources';
 import { IFileService } from 'vs/platform/files/common/files';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
+import { IFileDialogService } from 'vs/platform/dialogs/common/dialogs';
 
 // Handlers implementations for context menu actions
 const addBookmark: ICommandHandler = (accessor: ServicesAccessor, scope: BookmarkType) => {
@@ -282,17 +283,20 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 		const bookmarksManager = accessor.get(IBookmarksManager);
 		const textFileService = accessor.get(ITextFileService);
 		const contextService = accessor.get(IWorkspaceContextService);
+		const fileDialogService = accessor.get(IFileDialogService);
+
 		const workspaceBookmarks = bookmarksManager.workspaceBookmarks;
 		const workspaceFolder = contextService.getWorkspace().folders[0];
-
 		if (!workspaceFolder) {
 			return;
 		}
 
 		const defaultPath = URI.joinPath(workspaceFolder.uri, 'blueprints');
-		textFileService.saveAs(defaultPath, undefined, undefined).then(() => {
-			textFileService.write(defaultPath, JSON.stringify(Array.from(workspaceBookmarks)));
-		});
+		const newPath = await fileDialogService.pickFileToSave(defaultPath);
+		if (newPath) {
+			const toWrite = JSON.stringify(Array.from(workspaceBookmarks));
+			await textFileService.create(newPath, toWrite, { overwrite: true });
+		}
 	}
 });
 
@@ -302,8 +306,8 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	handler: (accessor: ServicesAccessor) => {
 		const bookmarksManager = accessor.get(IBookmarksManager);
 		const fileService = accessor.get(IFileService);
-		const selectedResource = findResourceSelectedInExplorer(accessor);
 
+		const selectedResource = findResourceSelectedInExplorer(accessor);
 		if (selectedResource) {
 			fileService.readFile(selectedResource).then(blueprintsRaw => {
 				const blueprints = new Set(JSON.parse(blueprintsRaw.value.toString()) as string[]);
