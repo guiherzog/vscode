@@ -49,6 +49,8 @@ class RecentDirectoryElementIconRenderer extends DirectoryElementIconRenderer {
 		explorerService: IExplorerService,
 		private readonly bookmarksManager: IBookmarksManager) {
 		super(container, stat, explorerService);
+		this._focusIcon.style.paddingLeft = '5px';
+
 		this.renderBookmarkIcon();
 	}
 
@@ -61,15 +63,17 @@ class RecentDirectoryElementIconRenderer extends DirectoryElementIconRenderer {
 		this._bookmarkIcon = document.createElement('img');
 		this._bookmarkIcon.id = 'bookmarkIconRecentDirectoryContainer_' + this.stat.toString();
 		this._bookmarkIcon.className = bookmarkClass(bookmarkType);
-		this._bookmarkIcon.onclick = () => this.bookmarksManager.toggleBookmarkType(this.stat);
+		this._bookmarkIcon.onclick = () => {
+			const newType = this.bookmarksManager.toggleBookmarkType(this.stat);
+			this._bookmarkIcon.className = bookmarkClass(newType);
+		};
+		this._bookmarkIcon.style.paddingRight = '10px';
 
 		if (bookmarkType === BookmarkType.NONE) {
 			this._bookmarkIcon.style.visibility = 'hidden';
 		}
 
-		if (this.container.firstChild) {
-			this.container.insertBefore(this._bookmarkIcon, this.container.firstChild?.nextSibling);
-		}
+		this.container.appendChild(this._bookmarkIcon);
 	}
 
 	dispose(): void {
