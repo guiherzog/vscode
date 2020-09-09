@@ -244,8 +244,8 @@ export class BookmarksView extends ViewPane {
 	}
 
 	private sortAndRefresh(sortType: SortType) {
-		this.globalBookmarks = this.getBookmarksTreeElements(this.bookmarksManager.globalBookmarks, sortType);
-		this.workspaceBookmarks = this.getBookmarksTreeElements(this.bookmarksManager.workspaceBookmarks, sortType);
+		this.globalBookmarks = Directory.getDirectoriesAsSortedTreeElements(this.bookmarksManager.globalBookmarks, sortType);
+		this.workspaceBookmarks = Directory.getDirectoriesAsSortedTreeElements(this.bookmarksManager.workspaceBookmarks, sortType);
 
 		this.tree.setChildren(this.globalBookmarksHeader, this.globalBookmarks);
 		this.tree.setChildren(this.workspaceBookmarksHeader, this.workspaceBookmarks);
@@ -332,7 +332,8 @@ export class BookmarksView extends ViewPane {
 
 	private renderNewBookmark(resource: URI, scope: BookmarkType): void {
 		const resourceAsString = resource.toString();
-		const resourceIndex = this.sortType === SortType.DATE ? 0 : this.findIndexInSortedArray(basename(resource), scope);
+		const bookmarksArray = scope === BookmarkType.WORKSPACE ? this.workspaceBookmarks : this.globalBookmarks;
+		const resourceIndex = this.sortType === SortType.DATE ? 0 : Directory.findIndexInSortedArray(basename(resource), bookmarksArray);
 		if (scope === BookmarkType.NONE) {
 			return;
 		}
@@ -366,24 +367,6 @@ export class BookmarksView extends ViewPane {
 				this.tree.setChildren(this.globalBookmarksHeader, this.globalBookmarks);
 			}
 		}
-	}
-
-	private findIndexInSortedArray(resource: string, scope: BookmarkType) {
-		// Assuming that the bookmarks array is sorted by name, find the index for this resource using a binary search
-		const bookmarks = scope === BookmarkType.WORKSPACE ? this.workspaceBookmarks : this.globalBookmarks;
-		let left = 0;
-		let right = bookmarks.length;
-
-		while (left < right) {
-			const mid = (left + right) >>> 1;
-			if (bookmarks[mid].element.getName() < resource) {
-				left = mid + 1;
-			} else {
-				right = mid;
-			}
-		}
-
-		return left;
 	}
 }
 
