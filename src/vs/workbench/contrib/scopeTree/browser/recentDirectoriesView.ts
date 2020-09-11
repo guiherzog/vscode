@@ -86,7 +86,6 @@ class RecentDirectoryRenderer extends DirectoryRenderer {
 		labels: ResourceLabels,
 		explorerService: IExplorerService,
 		private readonly bookmarksManager: IBookmarksManager,
-		private readonly fileService: IFileService
 	) {
 		super(labels, explorerService);
 	}
@@ -129,7 +128,6 @@ export class RecentDirectoriesView extends ViewPane {
 
 	private dirs: ITreeElement<Directory>[] = [];
 	private canRefresh: boolean = true;
-
 	private contributedContextMenu!: IMenu;
 
 	constructor(
@@ -180,7 +178,7 @@ export class RecentDirectoriesView extends ViewPane {
 
 		this.labels = this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeBodyVisibility });
 		this.tree = <WorkbenchObjectTree<Directory>>this.instantiationService.createInstance(WorkbenchObjectTree, 'RecentDirectories', container,
-			new DirectoryDelegate(), [new RecentDirectoryRenderer(this.labels, this.explorerService, this.bookmarksManager, this.fileService)],
+			new DirectoryDelegate(), [new RecentDirectoryRenderer(this.labels, this.explorerService, this.bookmarksManager)],
 			{
 				accessibilityProvider: {
 					getAriaLabel(element: Directory) {
