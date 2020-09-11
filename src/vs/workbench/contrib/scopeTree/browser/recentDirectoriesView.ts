@@ -63,10 +63,7 @@ class RecentDirectoryElementIconRenderer extends DirectoryElementIconRenderer {
 		this._bookmarkIcon = document.createElement('img');
 		this._bookmarkIcon.id = 'bookmarkIconRecentDirectoryContainer_' + this.stat.toString();
 		this._bookmarkIcon.className = bookmarkClass(bookmarkType);
-		this._bookmarkIcon.onclick = () => {
-			const newType = this.bookmarksManager.toggleBookmarkType(this.stat);
-			this._bookmarkIcon.className = bookmarkClass(newType);
-		};
+		this._bookmarkIcon.onclick = () => this.bookmarksManager.toggleBookmarkType(this.stat);
 		this._bookmarkIcon.style.paddingRight = '10px';
 
 		if (bookmarkType === BookmarkType.NONE) {
