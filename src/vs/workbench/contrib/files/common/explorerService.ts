@@ -40,6 +40,8 @@ export class ExplorerService implements IExplorerService {
 	private view: IExplorerView | undefined;
 	private model: ExplorerModel;
 
+	onDidChangeRoot!: Event<void>;
+
 	constructor(
 		@IFileService private fileService: IFileService,
 		@IInstantiationService private instantiationService: IInstantiationService,
@@ -75,6 +77,9 @@ export class ExplorerService implements IExplorerService {
 				this.view.setTreeInput();
 			}
 		}));
+	}
+	setRoot(resource: URI, selectResource?: URI | undefined): void {
+		throw new Error('Method not implemented.');
 	}
 
 	get roots(): ExplorerItem[] {
