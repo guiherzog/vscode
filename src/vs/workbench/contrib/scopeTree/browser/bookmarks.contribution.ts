@@ -387,6 +387,8 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 						bookmarksManager.addBookmark(URI.parse(res), BookmarkType.WORKSPACE);
 					});
 				});
+
+				bookmarksManager.sortBookmarks(bookmarksManager.sortType);
 			});
 	}
 });
