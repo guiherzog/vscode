@@ -85,7 +85,7 @@ class RecentDirectoryRenderer extends DirectoryRenderer {
 	constructor(
 		labels: ResourceLabels,
 		explorerService: IExplorerService,
-		private readonly bookmarksManager: IBookmarksManager,
+		private readonly bookmarksManager: IBookmarksManager
 	) {
 		super(labels, explorerService);
 	}
