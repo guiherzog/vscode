@@ -326,8 +326,9 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 						}
 					}
 
+					
 					let fileContents: string = '';
-					const toWrite = Array.from(workspaceBookmarks).sort((path1, path2) => (path1 < path2) ? -1 : 1);	//Equality cannot happen because we have a set
+					const toWrite: string[] = (Array.from(workspaceBookmarks)).sort();
 					textFileService.create(newPath, JSON.stringify(toWrite, undefined, '\t' /* Insert tab and new line before resource */), { overwrite: true }).then(() => editorService.openEditor({ resource: newPath }));
 
 					for (let i = 0; i < toWrite.length; i++) {
