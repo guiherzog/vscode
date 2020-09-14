@@ -105,10 +105,6 @@ export class DirectoryElementIconRenderer implements IDisposable {
 		this._focusIcon.style.visibility = 'hidden';
 	};
 
-	private select = async () => {
-		await this.explorerService.select(this.stat, true);	// Should also expand directory
-	};
-
 	private setRoot = () => {
 		this.explorerService.setRoot(this.stat);
 	};
@@ -116,7 +112,6 @@ export class DirectoryElementIconRenderer implements IDisposable {
 	private addListeners(): void {
 		this.container.addEventListener('mouseover', this.showIcon);
 		this.container.addEventListener('mouseout', this.hideIcon);
-		this.container.addEventListener('dblclick', this.select);
 		this._focusIcon.addEventListener('click', this.setRoot);
 	}
 
@@ -131,7 +126,6 @@ export class DirectoryElementIconRenderer implements IDisposable {
 		// Listeners need to be removed because container (templateData.label.element) is not removed from the DOM.
 		this.container.removeEventListener('mouseover', this.showIcon);
 		this.container.removeEventListener('mouseout', this.hideIcon);
-		this.container.removeEventListener('dblclick', this.select);
 		this._focusIcon.removeEventListener('click', this.setRoot);
 	}
 }

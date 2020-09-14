@@ -79,6 +79,10 @@ export class ExplorerService implements IExplorerService {
 			}
 		}));
 	}
+	selectOrSetRoot(resource: URI): void {
+		throw new Error('Method not implemented.');
+	}
+
 	setRoot(resource: URI, selectResource?: URI | undefined): void {
 		throw new Error('Method not implemented.');
 	}
