@@ -258,8 +258,6 @@ export class RecentDirectoriesView extends ViewPane {
 		if (!this.dirty) {
 			this.dirty = true;
 			setTimeout(() => this.refreshView(), 100);
-		} else {
-			this.refreshView();
 		}
 	}
 }
