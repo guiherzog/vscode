@@ -93,7 +93,6 @@ export class NativeHostMainService extends Disposable implements INativeHostMain
 
 	private readonly _onDidChangePassword = this._register(new Emitter<void>());
 	readonly onDidChangePassword = this._onDidChangePassword.event;
-
 	//#endregion
 
 	//#region Window
@@ -684,7 +683,6 @@ export class NativeHostMainService extends Disposable implements INativeHostMain
 
 	async setPassword(windowId: number | undefined, service: string, account: string, password: string): Promise<void> {
 		const keytar = await import('keytar');
-
 		if (isWindows && password.length > NativeHostMainService.MAX_PASSWORD_LENGTH) {
 			let index = 0;
 			let chunk = 0;
@@ -712,7 +710,6 @@ export class NativeHostMainService extends Disposable implements INativeHostMain
 
 	async deletePassword(windowId: number | undefined, service: string, account: string): Promise<boolean> {
 		const keytar = await import('keytar');
-
 		const didDelete = await keytar.deletePassword(service, account);
 		if (didDelete) {
 			this._onDidChangePassword.fire();
