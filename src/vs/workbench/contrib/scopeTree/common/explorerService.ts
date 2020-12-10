@@ -304,7 +304,7 @@ export class ExplorerService implements IExplorerService {
 			modelElements.forEach(async element => {
 				if (element.parent) {
 					const parent = element.parent;
-					const nextSelection = this.view?.findAdjacentSibling(element);
+					const nextSelection = this.view?.findAdjacentSibling?.(element);
 
 					// Remove Element from Parent (Model)
 					parent.removeChild(element);
