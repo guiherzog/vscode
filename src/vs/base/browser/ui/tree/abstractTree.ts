@@ -1162,7 +1162,7 @@ class TreeNodeListMouseController<T, TFilterData, TRef> extends MouseController<
 		}
 
 		for (let bookmarkClassName of this.tree.options.preserveCollapseStateOnTargets) {
-			if (hasClass(target, bookmarkClassName)) {
+			if (target.classList.contains(bookmarkClassName)) {
 				return false;
 			}
 		}
