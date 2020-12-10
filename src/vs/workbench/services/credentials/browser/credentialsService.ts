@@ -34,6 +34,7 @@ export class BrowserCredentialsService extends Disposable implements ICredential
 
 	async setPassword(service: string, account: string, password: string): Promise<void> {
 		await this.credentialsProvider.setPassword(service, account, password);
+
 		this._onDidChangePassword.fire();
 	}
 

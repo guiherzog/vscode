@@ -507,7 +507,6 @@ class TreeRenderer<T, TFilterData, TRef, TTemplateData> implements IListRenderer
 	}
 }
 
-export type LabelFuzzyScore = { label: string; score: FuzzyScore };
 class TreeRendererWithIndent<T, TFilterData, TRef, TTemplateData> extends TreeRenderer<T, TFilterData, TRef, TTemplateData>{
 	renderElement(node: ITreeNode<T, TFilterData>, index: number, templateData: ITreeListTemplateData<TTemplateData>, height: number | undefined): void {
 		super.renderElement(node, index, templateData, height);
@@ -517,6 +516,8 @@ class TreeRendererWithIndent<T, TFilterData, TRef, TTemplateData> extends TreeRe
 		templateData.indent.style.paddingLeft = `${TreeRenderer.DefaultIndent * 2}px`;
 	}
 }
+
+export type LabelFuzzyScore = { label: string; score: FuzzyScore };
 
 class TypeFilter<T> implements ITreeFilter<T, FuzzyScore | LabelFuzzyScore>, IDisposable {
 	private _totalCount = 0;

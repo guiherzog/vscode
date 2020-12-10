@@ -12,6 +12,7 @@ import { Disposable } from 'vs/base/common/lifecycle';
 export class KeytarCredentialsService extends Disposable implements ICredentialsService {
 
 	declare readonly _serviceBrand: undefined;
+
 	private _onDidChangePassword: Emitter<void> = this._register(new Emitter());
 	readonly onDidChangePassword = this._onDidChangePassword.event;
 

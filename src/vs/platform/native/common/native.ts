@@ -151,5 +151,4 @@ export interface ICommonNativeHostService {
 	deletePassword(service: string, account: string): Promise<boolean>;
 	findPassword(service: string): Promise<string | null>;
 	findCredentials(service: string): Promise<Array<{ account: string, password: string }>>
-	readonly onDidChangePassword: Event<void>;
 }
