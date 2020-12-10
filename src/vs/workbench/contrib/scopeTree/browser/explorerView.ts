@@ -10,7 +10,7 @@ import { IAction, WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassific
 import { memoize } from 'vs/base/common/decorators';
 import { IFilesConfiguration, ExplorerFolderContext, FilesExplorerFocusedContext, ExplorerFocusedContext, ExplorerRootContext, ExplorerResourceReadonlyContext, IExplorerService, ExplorerResourceCut, ExplorerResourceMoveableToTrash, ExplorerCompressedFocusContext, ExplorerCompressedFirstFocusContext, ExplorerCompressedLastFocusContext, ExplorerResourceAvailableEditorIdsContext } from 'vs/workbench/contrib/files/common/files';
 import { NewFolderAction, NewFileAction, FileCopiedContext, RefreshExplorerView, CollapseExplorerView } from 'vs/workbench/contrib/files/browser/fileActions';
-import { toResource, SideBySideEditor } from 'vs/workbench/common/editor';
+import { SideBySideEditor, EditorResourceAccessor } from 'vs/workbench/common/editor';
 import { DiffEditorInput } from 'vs/workbench/common/editor/diffEditorInput';
 import * as DOM from 'vs/base/browser/dom';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
@@ -228,7 +228,7 @@ export class ExplorerView extends ViewPane {
 	// Split view methods
 
 	private renderParentButton() {
-		DOM.addClass(this.parentButton, 'parent-button');
+		this.parentButton.classList.add('parent-button');
 
 		this.parentButton.onclick = () => {
 			const root = this.tree.getInput() as ExplorerItem;
@@ -254,7 +254,7 @@ export class ExplorerView extends ViewPane {
 		const breadcrumbElement = document.createElement('li');
 		breadcrumbElement.textContent = basename(resource) + '/';
 
-		DOM.addClass(breadcrumbElement, 'breadcrumb-element');
+		breadcrumbElement.classList.add('breadcrumb-element');
 
 		DOM.addDisposableListener(breadcrumbElement, DOM.EventType.MOUSE_OVER, () => {
 			breadcrumbElement.classList.replace('breadcrumb-element', 'breadcrumb-element-emphasized');
@@ -309,7 +309,7 @@ export class ExplorerView extends ViewPane {
 		const breadcrumbBackground = document.createElement('div');
 		breadcrumbBackground.style.height = `${ExplorerDelegate.ITEM_HEIGHT}px`;
 
-		DOM.addClass(this.breadcrumb, 'breadcrumb-file-tree');
+		this.breadcrumb.classList.add('breadcrumb-file-tree');
 		DOM.append(container, parentContainer);
 		DOM.append(breadcrumbBackground, this.breadcrumb);
 
@@ -447,13 +447,13 @@ export class ExplorerView extends ViewPane {
 			}
 
 			this.horizontalScrolling = undefined;
-			DOM.removeClass(this.treeContainer, 'highlight');
+			this.treeContainer.classList.remove('highlight');
 		}
 
 		await this.refresh(false, stat.parent, false);
 
 		if (isEditing) {
-			DOM.addClass(this.treeContainer, 'highlight');
+			this.treeContainer.classList.add('highlight');
 			this.tree.reveal(stat);
 		} else {
 			this.tree.domFocus();
@@ -652,7 +652,7 @@ export class ExplorerView extends ViewPane {
 		} else {
 			arg = roots.length === 1 ? roots[0].resource : {};
 		}
-		disposables.add(createAndFillInContextMenuActions(this.contributedContextMenu, { arg, shouldForwardArgs: true }, actions, this.contextMenuService));
+		disposables.add(createAndFillInContextMenuActions(this.contributedContextMenu, { arg, shouldForwardArgs: true }, actions));
 
 		this.contextMenuService.showContextMenu({
 			getAnchor: () => anchor,
@@ -828,7 +828,7 @@ export class ExplorerView extends ViewPane {
 		}
 
 		// check for files
-		return withNullAsUndefined(toResource(input, { supportSideBySide: SideBySideEditor.PRIMARY }));
+		return withNullAsUndefined(EditorResourceAccessor.getCanonicalUri(input, { supportSideBySide: SideBySideEditor.PRIMARY }));
 	}
 
 	public async selectResource(resource: URI | undefined, reveal = this.autoReveal, retry = 0): Promise<void> {
@@ -985,12 +985,11 @@ export class ExplorerView extends ViewPane {
 }
 
 function createFileIconThemableTreeContainerScope(container: HTMLElement, themeService: IThemeService): IDisposable {
-	DOM.addClass(container, 'file-icon-themable-tree');
-	DOM.addClass(container, 'show-file-icons');
+	container.classList.add('file-icon-themable-tree', 'show-file-icons');
 
 	const onDidChangeFileIconTheme = (theme: IFileIconTheme) => {
-		DOM.toggleClass(container, 'align-icons-and-twisties', theme.hasFileIcons && !theme.hasFolderIcons);
-		DOM.toggleClass(container, 'hide-arrows', theme.hidesExplorerArrows === true);
+		container.classList.toggle('align-icons-and-twisties', theme.hasFileIcons && !theme.hasFolderIcons);
+		container.classList.toggle('hide-arrows', theme.hidesExplorerArrows === true);
 	};
 
 	onDidChangeFileIconTheme(themeService.getFileIconTheme());

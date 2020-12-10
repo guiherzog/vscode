@@ -18,7 +18,7 @@ import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IBookmarksManager, BookmarkType, SortType } from 'vs/workbench/contrib/scopeTree/common/bookmarks';
 import { Codicon } from 'vs/base/common/codicons';
-import { basename } from 'vs/base/common/resources';
+import { basename, dirname } from 'vs/base/common/resources';
 import { IExplorerService } from 'vs/workbench/contrib/files/common/files';
 import { IListVirtualDelegate, IKeyboardNavigationLabelProvider } from 'vs/base/browser/ui/list/list';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
@@ -30,7 +30,7 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { IAction } from 'vs/base/common/actions';
 import { createAndFillInContextMenuActions } from 'vs/platform/actions/browser/menuEntryActionViewItem';
 import { IMenu, IMenuService, MenuId } from 'vs/platform/actions/common/actions';
-import { Directory, IDirectoryTemplateData, DirectoryElementIconRenderer, DirectoryRenderer, getDirectoriesAsSortedTreeElements, findIndexInSortedArray } from 'vs/workbench/contrib/scopeTree/browser/directoryViewer';
+import { Directory, IDirectoryTemplateData, DirectoryElementIconRenderer, DirectoryRenderer, getDirectoriesAsSortedTreeElements } from 'vs/workbench/contrib/scopeTree/browser/directoryViewer';
 import { IFileService } from 'vs/platform/files/common/files';
 
 export class Bookmark {
@@ -326,7 +326,7 @@ export class BookmarksView extends ViewPane {
 
 		const actions: IAction[] = [];
 		const disposables = new DisposableStore();
-		disposables.add(createAndFillInContextMenuActions(this.contributedContextMenu, { shouldForwardArgs: true }, actions, this.contextMenuService));
+		disposables.add(createAndFillInContextMenuActions(this.contributedContextMenu, { shouldForwardArgs: true }, actions));
 
 		this.contextMenuService.showContextMenu({
 			getAnchor: () => e.anchor,
