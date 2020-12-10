@@ -331,7 +331,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 						}
 					}
 
-					
+
 					let fileContents: string = '';
 					const toWrite: string[] = (Array.from(workspaceBookmarks)).sort();
 					textFileService.create(newPath, JSON.stringify(toWrite, undefined, '\t' /* Insert tab and new line before resource */), { overwrite: true }).then(() => editorService.openEditor({ resource: newPath }));
@@ -358,7 +358,6 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 		const bookmarksManager = accessor.get(IBookmarksManager);
 		const fileService = accessor.get(IFileService);
 		const fileDialogService = accessor.get(IFileDialogService);
-		const contextService = accessor.get(IWorkspaceContextService);
 		const dialogService = accessor.get(IDialogService);
 		const explorerService = accessor.get(IExplorerService);
 

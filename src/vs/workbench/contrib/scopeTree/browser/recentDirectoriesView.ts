@@ -127,8 +127,6 @@ export class RecentDirectoriesView extends ViewPane {
 	private tree!: WorkbenchObjectTree<Directory>;
 
 	private dirs: ITreeElement<Directory>[] = [];
-	private canRefresh: boolean = true;
-	private contributedContextMenu!: IMenu;
 	private dirty: boolean = false;
 
 	constructor(

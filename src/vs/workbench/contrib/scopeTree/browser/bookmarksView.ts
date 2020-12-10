@@ -341,30 +341,6 @@ export class BookmarksView extends ViewPane {
 		});
 	}
 
-	private sortBookmarksByName(bookmarks: ITreeElement<Bookmark>[]): ITreeElement<Bookmark>[] {
-		return bookmarks.sort((bookmark1, bookmark2) => {
-			const compareNames = bookmark1.element.getName().localeCompare(bookmark2.element.getName());
-
-			// If directories have the same name, compare them by their full path
-			return compareNames || bookmark1.element.getParent().localeCompare(bookmark2.element.getParent());
-		});
-	}
-
-	private sortBookmarksByDate(bookmarks: ITreeElement<Bookmark>[]): ITreeElement<Bookmark>[] {
-		// Order has to be revesed when bookmarks are sorted by date because bookmarksManager keeps the most recent at the end of the array
-		return bookmarks.reverse();
-	}
-
-	private getBookmarksTreeElements(rawBookmarks: Set<string>, treeElements: ITreeElement<Directory>[]) {
-		const sortedBookmarks = this.sortBookmarkByName(rawBookmarks);
-		for (let i = 0; i < sortedBookmarks.length; i++) {
-			treeElements.push({
-				element: new Directory(sortedBookmarks[i])
-			});
-		});
-		return sortType === SortType.NAME ? this.sortBookmarksByName(unsortedTreeElements) : this.sortBookmarksByDate(unsortedTreeElements);
-	}
-
 	private toggleHeader(header: BookmarkHeader) {
 		header.expanded = !header.expanded;
 		const headerItem = header.scope === BookmarkType.GLOBAL ? this.globalBookmarksHeader : this.workspaceBookmarksHeader;
@@ -375,8 +351,6 @@ export class BookmarksView extends ViewPane {
 
 	private renderNewBookmark(resource: URI, scope: BookmarkType): void {
 		const resourceAsString = resource.toString();
-		const bookmarksArray = scope === BookmarkType.WORKSPACE ? this.workspaceBookmarks : this.globalBookmarks;
-		const resourceIndex = this.sortType === SortType.DATE ? 0 : findIndexInSortedArray(basename(resource), bookmarksArray);
 		if (scope === BookmarkType.NONE) {
 			return;
 		}
