@@ -1,0 +1,30 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.breadcrumb-file-tree {
+	list-style: none;
+	white-space: nowrap;
+	position: relative;
+	left: -20px;
+	top: -10px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.breadcrumb-element {
+	display: inline;
+}
+
+.breadcrumb-element-emphasized {
+	display: inline;
+	color: #01447e;
+	text-decoration: underline;
+}
+
+.parent-button {
+	vertical-align: middle;
+	visibility: hidden;
+	padding-right: 5px;
+}

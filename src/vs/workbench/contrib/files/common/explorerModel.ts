@@ -27,10 +27,10 @@ export class ExplorerModel implements IDisposable {
 	constructor(
 		private readonly contextService: IWorkspaceContextService,
 		private readonly uriIdentityService: IUriIdentityService,
-		fileService: IFileService
+		private readonly fileService: IFileService
 	) {
 		const setRoots = () => this._roots = this.contextService.getWorkspace().folders
-			.map(folder => new ExplorerItem(folder.uri, fileService, undefined, true, false, folder.name));
+			.map(folder => new ExplorerItem(folder.uri, this.fileService, undefined, true, false, folder.name));
 		setRoots();
 
 		this._listener = this.contextService.onDidChangeWorkspaceFolders(() => {
@@ -45,6 +45,18 @@ export class ExplorerModel implements IDisposable {
 
 	get onDidChangeRoots(): Event<void> {
 		return this._onDidChangeRoots.event;
+	}
+
+	async setRoot(resource: URI, sortOrder: SortOrder): Promise<void> {
+		const root = new ExplorerItem(resource, this.fileService, undefined);
+
+		const children = await root.fetchChildren(sortOrder);
+
+		children.forEach(child => {
+			root.addChild(child);
+		});
+
+		this._roots = [root];
 	}
 
 	/**

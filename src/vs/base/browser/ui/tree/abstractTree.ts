@@ -272,7 +272,7 @@ class EventCollection<T> implements Collection<T> {
 
 class TreeRenderer<T, TFilterData, TRef, TTemplateData> implements IListRenderer<ITreeNode<T, TFilterData>, ITreeListTemplateData<TTemplateData>> {
 
-	private static readonly DefaultIndent = 8;
+	protected static readonly DefaultIndent = 8;
 
 	readonly templateId: string;
 	private renderedElements = new Map<T, ITreeNode<T, TFilterData>>();
@@ -504,6 +504,16 @@ class TreeRenderer<T, TFilterData, TRef, TTemplateData> implements IListRenderer
 		this.renderedElements.clear();
 		this.indentGuidesDisposable.dispose();
 		dispose(this.disposables);
+	}
+}
+
+class TreeRendererWithIndent<T, TFilterData, TRef, TTemplateData> extends TreeRenderer<T, TFilterData, TRef, TTemplateData>{
+	renderElement(node: ITreeNode<T, TFilterData>, index: number, templateData: ITreeListTemplateData<TTemplateData>, height: number | undefined): void {
+		super.renderElement(node, index, templateData, height);
+
+		const paddingLeft = parseInt(templateData.twistie.style.paddingLeft);
+		templateData.twistie.style.paddingLeft = `${paddingLeft - TreeRenderer.DefaultIndent}px`;
+		templateData.indent.style.paddingLeft = `${TreeRenderer.DefaultIndent * 2}px`;
 	}
 }
 
@@ -954,6 +964,7 @@ export interface IAbstractTreeOptionsUpdate extends ITreeRendererOptions {
 	readonly smoothScrolling?: boolean;
 	readonly horizontalScrolling?: boolean;
 	readonly expandOnlyOnDoubleClick?: boolean;
+	readonly preserveCollapseStateOnTargets?: string[];
 }
 
 export interface IAbstractTreeOptions<T, TFilterData = void> extends IAbstractTreeOptionsUpdate, IListOptions<T> {
@@ -1117,6 +1128,10 @@ class TreeNodeListMouseController<T, TFilterData, TRef> extends MouseController<
 			return super.onViewPointer(e);
 		}
 
+		if (!this.preserveCollapseState(target)) {
+			return super.onViewPointer(e);
+		}
+
 		if (node.collapsible) {
 			const model = ((this.tree as any).model as ITreeModel<T, TFilterData, TRef>); // internal
 			const location = model.getNodeLocation(node);
@@ -1139,6 +1154,20 @@ class TreeNodeListMouseController<T, TFilterData, TRef> extends MouseController<
 		}
 
 		super.onDoubleClick(e);
+	}
+
+	private preserveCollapseState(target: HTMLElement): boolean {
+		if (!this.tree.options.preserveCollapseStateOnTargets) {
+			return true;
+		}
+
+		for (let bookmarkClassName of this.tree.options.preserveCollapseStateOnTargets) {
+			if (target.classList.contains(bookmarkClassName)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 }
 
@@ -1245,6 +1274,9 @@ export abstract class AbstractTree<T, TFilterData, TRef> implements IDisposable 
 	get onDidFocus(): Event<void> { return this.view.onDidFocus; }
 	get onDidBlur(): Event<void> { return this.view.onDidBlur; }
 
+	get onMouseOver(): Event<ITreeMouseEvent<T>> { return Event.map(this.view.onMouseOver, asTreeMouseEvent); }
+	get onMouseOut(): Event<ITreeMouseEvent<T>> { return Event.map(this.view.onMouseOut, asTreeMouseEvent); }
+
 	get onDidChangeCollapseState(): Event<ICollapseStateChangeEvent<T, TFilterData>> { return this.model.onDidChangeCollapseState; }
 	get onDidChangeRenderNodeCount(): Event<ITreeNode<T, TFilterData>> { return this.model.onDidChangeRenderNodeCount; }
 
@@ -1274,7 +1306,7 @@ export abstract class AbstractTree<T, TFilterData, TRef> implements IDisposable 
 		const onDidChangeCollapseStateRelay = new Relay<ICollapseStateChangeEvent<T, TFilterData>>();
 		const onDidChangeActiveNodes = new Relay<ITreeNode<T, TFilterData>[]>();
 		const activeNodes = new EventCollection(onDidChangeActiveNodes.event);
-		this.renderers = renderers.map(r => new TreeRenderer<T, TFilterData, TRef, any>(r, () => this.model, onDidChangeCollapseStateRelay.event, activeNodes, _options));
+		this.renderers = renderers.map(r => this.createTreeRenderer(r, onDidChangeCollapseStateRelay, activeNodes, _options));
 		for (let r of this.renderers) {
 			this.disposables.add(r);
 		}
@@ -1689,6 +1721,15 @@ export abstract class AbstractTree<T, TFilterData, TRef> implements IDisposable 
 		const recursive = e.browserEvent.altKey;
 
 		this.model.setCollapsed(location, undefined, recursive);
+	}
+
+	private createTreeRenderer(renderer: ITreeRenderer<T, TFilterData, any>, onDidChangeCollapseStateRelay: Relay<ICollapseStateChangeEvent<T, TFilterData>>, activeNodes: EventCollection<ITreeNode<T, TFilterData>>, options: IAbstractTreeOptions<T, TFilterData>) {
+		if (renderer.templateId === 'file') {
+			return new TreeRendererWithIndent<T, TFilterData, TRef, any>(renderer, () => this.model, onDidChangeCollapseStateRelay.event, activeNodes, options);
+		}
+		else {
+			return new TreeRenderer<T, TFilterData, TRef, any>(renderer, () => this.model, onDidChangeCollapseStateRelay.event, activeNodes, options);
+		}
 	}
 
 	protected abstract createModel(user: string, view: ISpliceable<ITreeNode<T, TFilterData>>, options: IAbstractTreeOptions<T, TFilterData>): ITreeModel<T, TFilterData, TRef>;

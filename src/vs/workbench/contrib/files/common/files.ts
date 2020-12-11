@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from 'vs/base/common/uri';
+import { Event } from 'vs/base/common/event';
 import { IEditorOptions } from 'vs/editor/common/config/editorOptions';
 import { IWorkbenchEditorConfiguration, IEditorIdentifier, IEditorInput, EditorResourceAccessor, SideBySideEditor } from 'vs/workbench/common/editor';
 import { IFilesConfiguration as PlatformIFilesConfiguration, FileChangeType, IFileService } from 'vs/platform/files/common/files';
@@ -48,12 +49,15 @@ export interface IExplorerService {
 	refresh(): Promise<void>;
 	setToCopy(stats: ExplorerItem[], cut: boolean): Promise<void>;
 	isCut(stat: ExplorerItem): boolean;
+	setRoot(resource: URI, selectResource?: URI): void;
+	onDidChangeRoot: Event<void>;
 
 	/**
 	 * Selects and reveal the file element provided by the given resource if its found in the explorer.
 	 * Will try to resolve the path in case the explorer is not yet expanded to the file yet.
 	 */
 	select(resource: URI, reveal?: boolean | string): Promise<void>;
+	selectOrSetRoot(resource: URI): void;
 
 	registerView(contextAndRefreshProvider: IExplorerView): void;
 }
@@ -66,6 +70,8 @@ export interface IExplorerView {
 	itemsCopied(tats: ExplorerItem[], cut: boolean, previousCut: ExplorerItem[] | undefined): void;
 	setEditable(stat: ExplorerItem, isEditing: boolean): Promise<void>;
 	focusNeighbourIfItemFocused(item: ExplorerItem): void;
+	setRoot?(resource: URI): void;
+	findAdjacentSibling?(stat: ExplorerItem): URI | undefined;
 }
 
 export const IExplorerService = createDecorator<IExplorerService>('explorerService');

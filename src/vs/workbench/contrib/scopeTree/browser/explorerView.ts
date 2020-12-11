@@ -10,6 +10,7 @@ import { IAction, WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassific
 import { memoize } from 'vs/base/common/decorators';
 import { IFilesConfiguration, ExplorerFolderContext, FilesExplorerFocusedContext, ExplorerFocusedContext, ExplorerRootContext, ExplorerResourceReadonlyContext, IExplorerService, ExplorerResourceCut, ExplorerResourceMoveableToTrash, ExplorerCompressedFocusContext, ExplorerCompressedFirstFocusContext, ExplorerCompressedLastFocusContext, ExplorerResourceAvailableEditorIdsContext } from 'vs/workbench/contrib/files/common/files';
 import { NewFolderAction, NewFileAction, FileCopiedContext, RefreshExplorerView, CollapseExplorerView } from 'vs/workbench/contrib/files/browser/fileActions';
+import { SideBySideEditor, EditorResourceAccessor } from 'vs/workbench/common/editor';
 import { DiffEditorInput } from 'vs/workbench/common/editor/diffEditorInput';
 import * as DOM from 'vs/base/browser/dom';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
@@ -28,7 +29,7 @@ import { DelayedDragHandler } from 'vs/base/browser/dnd';
 import { IEditorService, SIDE_GROUP, ACTIVE_GROUP } from 'vs/workbench/services/editor/common/editorService';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPaneContainer';
 import { ILabelService } from 'vs/platform/label/common/label';
-import { ExplorerDelegate, ExplorerDataSource, FilesRenderer, ICompressedNavigationController, FilesFilter, FileSorter, FileDragAndDrop, ExplorerCompressionDelegate, isCompressedFolderName } from 'vs/workbench/contrib/files/browser/views/explorerViewer';
+import { ExplorerDelegate, ExplorerDataSource, FilesRenderer, ICompressedNavigationController, FilesFilter, FileSorter, FileDragAndDrop, ExplorerCompressionDelegate, isCompressedFolderName } from 'vs/workbench/contrib/scopeTree/browser/explorerViewer';
 import { IThemeService, IFileIconTheme } from 'vs/platform/theme/common/themeService';
 import { IWorkbenchThemeService } from 'vs/workbench/services/themes/common/workbenchThemeService';
 import { ITreeContextMenuEvent } from 'vs/base/browser/ui/tree/tree';
@@ -41,6 +42,7 @@ import { IStorageService, StorageScope } from 'vs/platform/storage/common/storag
 import { IAsyncDataTreeViewState } from 'vs/base/browser/ui/tree/asyncDataTree';
 import { FuzzyScore } from 'vs/base/common/filters';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
+import { withNullAsUndefined } from 'vs/base/common/types';
 import { IFileService, FileSystemProviderCapabilities } from 'vs/platform/files/common/files';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { Event } from 'vs/base/common/event';
@@ -51,6 +53,10 @@ import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { IUriIdentityService } from 'vs/workbench/services/uriIdentity/common/uriIdentity';
+import { dirname, basename, isEqualOrParent } from 'vs/base/common/resources';
+import { Codicon } from 'vs/base/common/codicons';
+import 'vs/css!./media/treeNavigation';
+import { IBookmarksManager, allBookmarksClasses } from 'vs/workbench/contrib/scopeTree/common/bookmarks';
 
 interface IExplorerViewColors extends IColorMapping {
 	listDropBackground?: ColorValue | undefined;
@@ -64,7 +70,7 @@ function hasExpandedRootChild(tree: WorkbenchCompressibleAsyncDataTree<ExplorerI
 	for (const folder of treeInput) {
 		if (tree.hasNode(folder) && !tree.isCollapsed(folder)) {
 			for (const [, child] of folder.children.entries()) {
-				if (tree.hasNode(child) && tree.isCollapsible(child) && !tree.isCollapsed(child)) {
+				if (tree.hasNode(child) && !tree.isCollapsed(child)) {
 					return true;
 				}
 			}
@@ -147,6 +153,9 @@ export class ExplorerView extends ViewPane {
 	private actions: IAction[] | undefined;
 	private decorationsProvider: ExplorerDecorationsProvider | undefined;
 
+	private parentButton: HTMLElement = DOM.$(Codicon.foldUp.cssSelector);
+	private breadcrumb: HTMLElement = document.createElement('ul');
+
 	constructor(
 		options: IViewPaneOptions,
 		@IContextMenuService contextMenuService: IContextMenuService,
@@ -170,6 +179,7 @@ export class ExplorerView extends ViewPane {
 		@IFileService private readonly fileService: IFileService,
 		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService,
 		@IOpenerService openerService: IOpenerService,
+		@IBookmarksManager private readonly bookmarksManager: IBookmarksManager
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService);
 
@@ -217,6 +227,55 @@ export class ExplorerView extends ViewPane {
 
 	// Split view methods
 
+	private renderParentButton() {
+		this.parentButton.classList.add('parent-button');
+
+		this.parentButton.onclick = () => {
+			const root = this.tree.getInput() as ExplorerItem;
+			const parentResource = dirname(root.resource);
+
+			this.explorerService.setRoot(parentResource);
+		};
+	}
+
+	private isWorkspaceRoot(root: URI): boolean {
+		return this.contextService.getWorkspace().folders.find(folder => folder.uri.toString() === root.toString()) !== undefined;
+	}
+
+	private renderBreadcrumb(): void {
+		const root: ExplorerItem = this.explorerService.roots[0];
+
+		DOM.clearNode(this.breadcrumb);
+		this.renderBreadcrumbElement(root.resource);
+		this.breadcrumb.insertBefore(this.parentButton, this.breadcrumb.firstChild);
+	}
+
+	private renderBreadcrumbElement(resource: URI): void {
+		const breadcrumbElement = document.createElement('li');
+		breadcrumbElement.textContent = basename(resource) + '/';
+
+		breadcrumbElement.classList.add('breadcrumb-element');
+
+		DOM.addDisposableListener(breadcrumbElement, DOM.EventType.MOUSE_OVER, () => {
+			breadcrumbElement.classList.replace('breadcrumb-element', 'breadcrumb-element-emphasized');
+		});
+
+		DOM.addDisposableListener(breadcrumbElement, DOM.EventType.MOUSE_OUT, () => {
+			breadcrumbElement.classList.replace('breadcrumb-element-emphasized', 'breadcrumb-element');
+		});
+
+		DOM.addDisposableListener(breadcrumbElement, DOM.EventType.CLICK, () => {
+			this.explorerService.setRoot(resource);
+		});
+
+		this.breadcrumb.insertBefore(breadcrumbElement, this.breadcrumb.firstChild);
+
+		if (!this.isWorkspaceRoot(resource)) {
+			const parentResource = dirname(resource);
+			this.renderBreadcrumbElement(parentResource);
+		}
+	}
+
 	protected renderHeader(container: HTMLElement): void {
 		super.renderHeader(container);
 
@@ -244,8 +303,22 @@ export class ExplorerView extends ViewPane {
 
 	renderBody(container: HTMLElement): void {
 		super.renderBody(container);
+		this.renderParentButton();
 
-		this.treeContainer = DOM.append(container, DOM.$('.explorer-folders-view'));
+		const parentContainer = document.createElement('div');
+		const breadcrumbBackground = document.createElement('div');
+		breadcrumbBackground.style.height = `${ExplorerDelegate.ITEM_HEIGHT}px`;
+
+		this.breadcrumb.classList.add('breadcrumb-file-tree');
+		DOM.append(container, parentContainer);
+		DOM.append(breadcrumbBackground, this.breadcrumb);
+
+		container.parentElement?.insertBefore(breadcrumbBackground, container);
+		if (!this.isExpanded()) {
+			DOM.hide(breadcrumbBackground);
+		}
+
+		this.treeContainer = DOM.append(parentContainer, DOM.$('.explorer-folders-view'));
 
 		this.styleElement = DOM.createStyleSheet(this.treeContainer);
 		attachStyler<IExplorerViewColors>(this.themeService, { listDropBackground }, this.styleListDropBackground.bind(this));
@@ -262,7 +335,16 @@ export class ExplorerView extends ViewPane {
 
 		// When the explorer viewer is loaded, listen to changes to the editor input
 		this._register(this.editorService.onDidActiveEditorChange(() => {
-			this.selectActiveFile();
+			const resource = this.getActiveFile();
+			const root = (this.tree.getInput() as ExplorerItem).resource;
+			if (!resource) {
+				return;
+			}
+			if (!root || !isEqualOrParent(resource, root)) {
+				this.explorerService.setRoot(dirname(resource), resource);
+			} else {
+				this.selectResource(resource, /* reveal */ true);
+			}
 		}));
 
 		// Also handle configuration updates
@@ -276,8 +358,51 @@ export class ExplorerView extends ViewPane {
 					await this.setTreeInput();
 				}
 				// Find resource to focus from active editor input if set
-				this.selectActiveFile(true);
+				this.selectActiveFile(false, true);
 			}
+		}));
+
+		this._register(this.onDidChangeExpansionState(async visible => {
+			if (visible) {
+				DOM.show(breadcrumbBackground);
+				await this.setTreeInput();
+			} else {
+				DOM.hide(breadcrumbBackground);
+			}
+		}));
+
+		this._register(this.tree.onMouseOver(e => {
+			const resource = e.element?.resource.toString();
+			const icon = document.getElementById('iconContainer_' + resource);
+			const bookmarkIconContainer = document.getElementById('bookmarkIconContainer_' + resource);
+
+			if (icon) {
+				icon.style.visibility = 'visible';
+			}
+			if (bookmarkIconContainer) {
+				bookmarkIconContainer.style.visibility = 'visible';
+			}
+		}));
+
+		this._register(this.tree.onMouseOut(e => {
+			const resource = e.element?.resource.toString();
+			const icon = document.getElementById('iconContainer_' + resource);
+			const bookmarkIconContainer = document.getElementById('bookmarkIconContainer_' + resource);
+
+			if (icon) {
+				icon.style.visibility = 'hidden';
+			}
+			if (bookmarkIconContainer && e.element && !this.bookmarksManager.getBookmarkType(e.element.resource)) {
+				bookmarkIconContainer.style.visibility = 'hidden';
+			}
+		}));
+
+		this._register(this.bookmarksManager.onBookmarksChanged(e => {
+			if (!this.isVisible) {
+				return;
+			}
+
+			this.bookmarksManager.changeTypeAndDisplay('bookmarkIconContainer_' + e.uri.toString(), e.bookmarkType);
 		}));
 	}
 
@@ -335,17 +460,19 @@ export class ExplorerView extends ViewPane {
 		}
 	}
 
-	private selectActiveFile(reveal = this.autoReveal): void {
+	private selectActiveFile(deselect?: boolean, reveal = this.autoReveal): void {
 		if (this.autoReveal) {
 			const activeFile = this.getActiveFile();
 			if (activeFile) {
 				const focus = this.tree.getFocus();
-				const selection = this.tree.getSelection();
-				if (focus.length === 1 && this.uriIdentityService.extUri.isEqual(focus[0].resource, activeFile) && selection.length === 1 && this.uriIdentityService.extUri.isEqual(selection[0].resource, activeFile)) {
-					// No action needed, active file is already focused and selected
+				if (focus.length === 1 && focus[0].resource.toString() === activeFile.toString()) {
+					// No action needed, active file is already focused
 					return;
 				}
 				this.explorerService.select(activeFile, reveal);
+			} else if (deselect) {
+				this.tree.setSelection([]);
+				this.tree.setFocus([]);
 			}
 		}
 	}
@@ -359,6 +486,7 @@ export class ExplorerView extends ViewPane {
 
 		const updateWidth = (stat: ExplorerItem) => this.tree.updateWidth(stat);
 		this.renderer = this.instantiationService.createInstance(FilesRenderer, explorerLabels, updateWidth);
+		this.renderer.registerBookmarksManager(this.bookmarksManager);
 		this._register(this.renderer);
 
 		this._register(createFileIconThemableTreeContainerScope(container, this.themeService));
@@ -455,6 +583,8 @@ export class ExplorerView extends ViewPane {
 				}
 			}
 		}));
+
+		this.tree.updateOptions({ preserveCollapseStateOnTargets: allBookmarksClasses });
 
 		// save view state
 		this._register(this.storageService.onWillSaveState(() => {
@@ -616,7 +746,21 @@ export class ExplorerView extends ViewPane {
 	}
 
 	findAdjacentSibling(deleted: ExplorerItem): URI | undefined {
-		throw new Error('Method not implemented.');
+		const parent = deleted.parent;
+		const children = this.tree.getNode(parent).children;
+
+		for (let i = 0; i < children.length; i++) {
+			const element = children[i].element as ExplorerItem;
+			if (element.resource.toString() === deleted.resource.toString()) {
+				if (i > 0) {
+					return (children[i - 1].element as ExplorerItem).resource;
+				} else if (children.length > 1) {
+					return (children[1].element as ExplorerItem).resource;
+				}
+			}
+		}
+
+		return parent ? parent.resource : undefined;
 	}
 
 	async setTreeInput(): Promise<void> {
@@ -647,7 +791,23 @@ export class ExplorerView extends ViewPane {
 		}
 
 		const previousInput = this.tree.getInput();
-		const promise = this.tree.setInput(input, viewState).then(() => {
+
+		// If the parent button was pressed, add the previous root to viewState.expanded so that its expanded children are not collapsed.
+		if (previousInput && input instanceof ExplorerItem && previousInput instanceof ExplorerItem) {
+			if (input.find(previousInput.resource)) {
+				viewState?.expanded?.push(previousInput.resource.toString());
+			}
+		}
+
+		const promise = this.tree.setInput(input, viewState).then(async () => {
+			if (!this.isWorkspaceRoot((input as ExplorerItem).resource)) {
+				this.parentButton.style.visibility = 'visible';
+			} else {
+				this.parentButton.style.visibility = 'hidden';
+			}
+
+			this.renderBreadcrumb();
+
 			if (Array.isArray(input)) {
 				if (!viewState || previousInput instanceof ExplorerItem) {
 					// There is no view state for this workspace, expand all roots. Or we transitioned from a folder workspace.
@@ -692,7 +852,7 @@ export class ExplorerView extends ViewPane {
 		}
 
 		// check for files
-		return input?.resource;
+		return withNullAsUndefined(EditorResourceAccessor.getCanonicalUri(input, { supportSideBySide: SideBySideEditor.PRIMARY }));
 	}
 
 	public async selectResource(resource: URI | undefined, reveal = this.autoReveal, retry = 0): Promise<void> {
@@ -835,8 +995,8 @@ export class ExplorerView extends ViewPane {
 		}
 
 		const newStyles = content.join('\n');
-		if (newStyles !== this.styleElement.textContent) {
-			this.styleElement.textContent = newStyles;
+		if (newStyles !== this.styleElement.innerHTML) {
+			this.styleElement.innerHTML = newStyles;
 		}
 	}
 
@@ -849,8 +1009,7 @@ export class ExplorerView extends ViewPane {
 }
 
 function createFileIconThemableTreeContainerScope(container: HTMLElement, themeService: IThemeService): IDisposable {
-	container.classList.add('file-icon-themable-tree');
-	container.classList.add('show-file-icons');
+	container.classList.add('file-icon-themable-tree', 'show-file-icons');
 
 	const onDidChangeFileIconTheme = (theme: IFileIconTheme) => {
 		container.classList.toggle('align-icons-and-twisties', theme.hasFileIcons && !theme.hasFolderIcons);
