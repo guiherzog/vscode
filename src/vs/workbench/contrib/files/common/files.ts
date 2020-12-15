@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from 'vs/base/common/uri';
+import { Event } from 'vs/base/common/event';
 import { IEditorOptions } from 'vs/editor/common/config/editorOptions';
 import { IWorkbenchEditorConfiguration, IEditorIdentifier, IEditorInput, EditorResourceAccessor, SideBySideEditor } from 'vs/workbench/common/editor';
 import { IFilesConfiguration as PlatformIFilesConfiguration, FileChangeType, IFileService } from 'vs/platform/files/common/files';
@@ -56,6 +57,10 @@ export interface IExplorerService {
 	select(resource: URI, reveal?: boolean | string): Promise<void>;
 
 	registerView(contextAndRefreshProvider: IExplorerView): void;
+
+	setRoot(resource: URI, selectResource?: URI): void;
+	onDidChangeRoot: Event<void>;
+	selectOrSetRoot(resource: URI): void;
 }
 
 export interface IExplorerView {
@@ -66,6 +71,8 @@ export interface IExplorerView {
 	itemsCopied(tats: ExplorerItem[], cut: boolean, previousCut: ExplorerItem[] | undefined): void;
 	setEditable(stat: ExplorerItem, isEditing: boolean): Promise<void>;
 	focusNeighbourIfItemFocused(item: ExplorerItem): void;
+	setRoot?(resource: URI): void;
+	findAdjacentSibling?(stat: ExplorerItem): URI | undefined;
 }
 
 export const IExplorerService = createDecorator<IExplorerService>('explorerService');

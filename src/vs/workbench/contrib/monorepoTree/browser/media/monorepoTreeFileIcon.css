@@ -1,0 +1,22 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.monorepo-tree-focus-icon-file-tree-aligned {
+	content: url('scope.svg');
+	float: left;
+	align-self: center;
+	width: 16px;
+	visibility: hidden;
+	padding-left: 8px; /* The row is moved to the left in renderTemplate(), so the focus icon needs some extra padding */
+}
+
+.monorepo-tree-focus-icon-breadcrumb-aligned {
+	content: url('scope.svg');
+	float: left;
+	align-self: center;
+	width: 16px;
+	visibility: hidden;
+	padding-left: 5px; /* Leave some space between the dir name and icon in the breadcrumb */
+}

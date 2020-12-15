@@ -151,6 +151,10 @@
 			"project": "vscode-workbench"
 		},
 		{
+			"name": "vs/workbench/contrib/monorepoTree",
+			"project": "vscode-workbench"
+		},
+		{
 			"name": "vs/workbench/contrib/search",
 			"project": "vscode-workbench"
 		},

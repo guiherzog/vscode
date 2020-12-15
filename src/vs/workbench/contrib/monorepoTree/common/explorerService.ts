@@ -7,10 +7,11 @@ import { Event, Emitter } from 'vs/base/common/event';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { DisposableStore } from 'vs/base/common/lifecycle';
 import { IExplorerService, IFilesConfiguration, SortOrder, IExplorerView } from 'vs/workbench/contrib/files/common/files';
-import { ExplorerItem, ExplorerModel } from 'vs/workbench/contrib/files/common/explorerModel';
+import { ExplorerItem } from 'vs/workbench/contrib/files/common/explorerModel';
+import { ExplorerModel } from 'vs/workbench/contrib/monorepoTree/common/explorerModel';
 import { URI } from 'vs/base/common/uri';
 import { FileOperationEvent, FileOperation, IFileService, FileChangesEvent, FILES_EXCLUDE_CONFIG, FileChangeType, IResolveFileOptions } from 'vs/platform/files/common/files';
-import { dirname } from 'vs/base/common/resources';
+import { dirname, isEqualOrParent } from 'vs/base/common/resources';
 import { memoize } from 'vs/base/common/decorators';
 import { ResourceGlobMatcher } from 'vs/workbench/common/resources';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -19,7 +20,6 @@ import { IExpression } from 'vs/base/common/glob';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IEditableData } from 'vs/workbench/common/views';
-import { IUriIdentityService } from 'vs/workbench/services/uriIdentity/common/uriIdentity';
 
 function getFileEventsExcludes(configurationService: IConfigurationService, root?: URI): IExpression {
 	const scope = root ? { resource: root } : undefined;
@@ -41,7 +41,7 @@ export class ExplorerService implements IExplorerService {
 	private model: ExplorerModel;
 
 	private _onDidChangeRoot = new Emitter<void>();
-	onDidChangeRoot = this._onDidChangeRoot.event;;
+	public onDidChangeRoot = this._onDidChangeRoot.event;
 
 	constructor(
 		@IFileService private fileService: IFileService,
@@ -50,11 +50,10 @@ export class ExplorerService implements IExplorerService {
 		@IWorkspaceContextService private contextService: IWorkspaceContextService,
 		@IClipboardService private clipboardService: IClipboardService,
 		@IEditorService private editorService: IEditorService,
-		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService
 	) {
 		this._sortOrder = this.configurationService.getValue('explorer.sortOrder');
 
-		this.model = new ExplorerModel(this.contextService, this.uriIdentityService, this.fileService);
+		this.model = new ExplorerModel(this.contextService, this.fileService);
 		this.disposables.add(this.model);
 		this.disposables.add(this.fileService.onDidRunOperation(e => this.onDidRunOperation(e)));
 		this.disposables.add(this.fileService.onDidFilesChange(e => this.onDidFilesChange(e)));
@@ -73,18 +72,11 @@ export class ExplorerService implements IExplorerService {
 				}
 			}
 		}));
-		this.disposables.add(this.model.onDidChangeRoots(() => {
+		this.disposables.add(this.model.onDidChangeWorkspaceFolders(() => {
 			if (this.view) {
-				this.view.setTreeInput();
+				this.view.setTreeInput().then(() => this._onDidChangeRoot.fire());
 			}
 		}));
-	}
-	selectOrSetRoot(resource: URI): void {
-		throw new Error('Method not implemented.');
-	}
-
-	setRoot(resource: URI, selectResource?: URI | undefined): void {
-		throw new Error('Method not implemented.');
 	}
 
 	get roots(): ExplorerItem[] {
@@ -150,6 +142,30 @@ export class ExplorerService implements IExplorerService {
 		return !!this.cutItems && this.cutItems.indexOf(item) >= 0;
 	}
 
+	setRoot(resource: URI, fileToSelect: URI | undefined = undefined): void {
+		this.model.setRoot(resource, this.sortOrder).then(() =>
+			this.view?.setTreeInput().then(() => {
+				// There is a file to select and the root has not changed in the meantime
+				if (fileToSelect && resource.toString() === this.roots[0].resource.toString()) {
+					this.view?.selectResource(fileToSelect);
+				}
+				this._onDidChangeRoot.fire();
+			}));
+	}
+
+	selectOrSetRoot(resource: URI): void {
+		if (this.roots.length === 0) {
+			return;
+		}
+
+		const root = this.roots[0];
+		if (isEqualOrParent(resource, root.resource)) {
+			this.select(resource);
+		} else {
+			this.setRoot(resource);
+		}
+	}
+
 	getEditable(): { stat: ExplorerItem, data: IEditableData } | undefined {
 		return this.editable;
 	}
@@ -181,7 +197,7 @@ export class ExplorerService implements IExplorerService {
 		}
 		const rootUri = workspaceFolder.uri;
 
-		const root = this.roots.find(r => this.uriIdentityService.extUri.isEqual(r.resource, rootUri))!;
+		const root = this.roots.find(r => r.resource.toString() === rootUri.toString())!;
 
 		try {
 			const stat = await this.fileService.resolve(rootUri, options);
@@ -205,7 +221,7 @@ export class ExplorerService implements IExplorerService {
 		this.model.roots.forEach(r => r.forgetChildren());
 		if (this.view) {
 			await this.view.refresh(true);
-			const resource = this.editorService.activeEditor?.resource;
+			const resource = this.editorService.activeEditor ? this.editorService.activeEditor.resource : undefined;
 			const autoReveal = this.configurationService.getValue<IFilesConfiguration>().explorer.autoReveal;
 
 			if (reveal && resource && autoReveal) {
@@ -256,7 +272,7 @@ export class ExplorerService implements IExplorerService {
 			const newParentResource = dirname(newElement.resource);
 
 			// Handle Rename
-			if (this.uriIdentityService.extUri.isEqual(oldParentResource, newParentResource)) {
+			if (oldParentResource.toString() === newParentResource.toString()) {
 				const modelElements = this.model.findAll(oldResource);
 				modelElements.forEach(async modelElement => {
 					// Rename File (Model)
@@ -288,11 +304,17 @@ export class ExplorerService implements IExplorerService {
 			modelElements.forEach(async element => {
 				if (element.parent) {
 					const parent = element.parent;
+					const nextSelection = this.view?.findAdjacentSibling?.(element);
+
 					// Remove Element from Parent (Model)
 					parent.removeChild(element);
-					this.view?.focusNeighbourIfItemFocused(element);
 					// Refresh Parent (View)
-					await this.view?.refresh(false, parent);
+					this.view?.refresh(false, parent).then(() => {
+						this.view?.selectResource(nextSelection);
+					});
+				} else {
+					const parentResource = dirname(element.resource);
+					this.setRoot(parentResource);
 				}
 			});
 		}

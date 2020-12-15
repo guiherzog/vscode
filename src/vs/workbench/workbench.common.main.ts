@@ -160,10 +160,14 @@ import 'vs/workbench/contrib/logs/common/logs.contribution';
 // Quickaccess
 import 'vs/workbench/contrib/quickaccess/browser/quickAccess.contribution';
 
+// Scoped Explorer
+import 'vs/workbench/contrib/monorepoTree/browser/explorerViewlet';
+import 'vs/workbench/contrib/monorepoTree/browser/files.contribution';
+
 // Explorer
-import 'vs/workbench/contrib/files/browser/explorerViewlet';
-import 'vs/workbench/contrib/files/browser/fileActions.contribution';
-import 'vs/workbench/contrib/files/browser/files.contribution';
+// import 'vs/workbench/contrib/files/browser/explorerViewlet';
+// import 'vs/workbench/contrib/files/browser/fileActions.contribution';
+// import 'vs/workbench/contrib/files/browser/files.contribution';
 
 // Backup
 import 'vs/workbench/contrib/backup/common/backup.contribution';
