@@ -38,6 +38,7 @@ import { IsWebContext } from 'vs/platform/contextkey/common/contextkeys';
 import { AddRootFolderAction, OpenFolderAction, OpenFileFolderAction } from 'vs/workbench/browser/actions/workspaceActions';
 import { isMacintosh } from 'vs/base/common/platform';
 import { Codicon } from 'vs/base/common/codicons';
+import { BookmarksView } from 'vs/workbench/contrib/monorepoTree/browser/bookmarksView';
 
 export class ExplorerViewletViewsContribution extends Disposable implements IWorkbenchContribution {
 
@@ -73,6 +74,12 @@ export class ExplorerViewletViewsContribution extends Disposable implements IWor
 		if (!viewDescriptors.some(v => v.id === openEditorsViewDescriptor.id)) {
 			viewDescriptorsToRegister.push(openEditorsViewDescriptor);
 		}
+
+		const bookmarksDescriptor = this.createBookmarksViewDescriptor();
+		if (!viewDescriptors.some(v => v.id === bookmarksDescriptor.id)) {
+			viewDescriptorsToRegister.push(bookmarksDescriptor);
+		}
+
 
 		const explorerViewDescriptor = this.createExplorerViewDescriptor();
 		const registeredExplorerViewDescriptor = viewDescriptors.find(v => v.id === explorerViewDescriptor.id);
@@ -148,6 +155,18 @@ export class ExplorerViewletViewsContribution extends Disposable implements IWor
 			}
 		};
 	}
+
+	private createBookmarksViewDescriptor(): IViewDescriptor {
+		return {
+			id: BookmarksView.ID,
+			name: BookmarksView.NAME,
+			containerIcon: Codicon.star.classNames,
+			ctorDescriptor: new SyncDescriptor(BookmarksView),
+			order: 2,
+			canToggleVisibility: true,
+		};
+	}
+
 
 	private onConfigurationUpdated(e: IConfigurationChangeEvent): void {
 		if (e.affectsConfiguration('explorer.openEditors.visible')) {

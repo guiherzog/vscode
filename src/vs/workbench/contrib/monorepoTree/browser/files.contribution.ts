@@ -40,9 +40,10 @@ import { WorkspaceWatcher } from 'vs/workbench/contrib/files/common/workspaceWat
 import { editorConfigurationBaseNode } from 'vs/editor/common/config/commonEditorConfig';
 import { DirtyFilesIndicator } from 'vs/workbench/contrib/files/common/dirtyFilesIndicator';
 import { isEqual } from 'vs/base/common/resources';
-
 import { BreadcrumbObserver } from 'vs/workbench/contrib/monorepoTree/browser/breadcrumbObserver';
 import { IBreadcrumbObserver } from 'vs/workbench/browser/parts/editor/breadcrumbObserver';
+import { BookmarksManager } from 'vs/workbench/contrib/monorepoTree/browser/bookmarksManager';
+import { IBookmarksManager } from 'vs/workbench/contrib/monorepoTree/common/bookmarks';
 
 // Viewlet Action
 export class OpenExplorerViewletAction extends ShowViewletAction {
@@ -78,6 +79,7 @@ class FileUriLabelContribution implements IWorkbenchContribution {
 }
 
 registerSingleton(IExplorerService, ExplorerService, true);
+registerSingleton(IBookmarksManager, BookmarksManager, true);
 registerSingleton(IBreadcrumbObserver, BreadcrumbObserver, true);
 
 const openViewletKb: IKeybindings = {

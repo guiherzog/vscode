@@ -54,6 +54,7 @@ import { IUriIdentityService } from 'vs/workbench/services/uriIdentity/common/ur
 import { dirname, basename, isEqualOrParent } from 'vs/base/common/resources';
 import { Codicon } from 'vs/base/common/codicons';
 import 'vs/css!./media/treeNavigation';
+import { IBookmarksManager, allBookmarksClasses } from 'vs/workbench/contrib/monorepoTree/common/bookmarks';
 
 interface IExplorerViewColors extends IColorMapping {
 	listDropBackground?: ColorValue | undefined;
@@ -176,6 +177,7 @@ export class ExplorerView extends ViewPane {
 		@IFileService private readonly fileService: IFileService,
 		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService,
 		@IOpenerService openerService: IOpenerService,
+		@IBookmarksManager private readonly bookmarksManager: IBookmarksManager
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService);
 
@@ -370,21 +372,36 @@ export class ExplorerView extends ViewPane {
 		this._register(this.tree.onMouseOver(e => {
 			const resource = e.element?.resource.toString();
 			const icon = document.getElementById('iconContainer_' + resource);
+			const bookmarkIconContainer = document.getElementById('bookmarkIconContainer_' + resource);
 
 			if (icon) {
 				icon.style.visibility = 'visible';
+			}
+			if (bookmarkIconContainer) {
+				bookmarkIconContainer.style.visibility = 'visible';
 			}
 		}));
 
 		this._register(this.tree.onMouseOut(e => {
 			const resource = e.element?.resource.toString();
 			const icon = document.getElementById('iconContainer_' + resource);
+			const bookmarkIconContainer = document.getElementById('bookmarkIconContainer_' + resource);
 
 			if (icon) {
 				icon.style.visibility = 'hidden';
 			}
+			if (bookmarkIconContainer && e.element && !this.bookmarksManager.getBookmarkType(e.element.resource)) {
+				bookmarkIconContainer.style.visibility = 'hidden';
+			}
 		}));
 
+		this._register(this.bookmarksManager.onBookmarksChanged(e => {
+			if (!this.isVisible) {
+				return;
+			}
+
+			this.bookmarksManager.changeTypeAndDisplay('bookmarkIconContainer_' + e.uri.toString(), e.bookmarkType);
+		}));
 	}
 
 	getActions(): IAction[] {
@@ -465,6 +482,7 @@ export class ExplorerView extends ViewPane {
 
 		const updateWidth = (stat: ExplorerItem) => this.tree.updateWidth(stat);
 		this.renderer = this.instantiationService.createInstance(FilesRenderer, explorerLabels, updateWidth);
+		this.renderer.registerBookmarksManager(this.bookmarksManager);
 		this._register(this.renderer);
 
 		this._register(createFileIconThemableTreeContainerScope(container, this.themeService));
@@ -561,6 +579,8 @@ export class ExplorerView extends ViewPane {
 				}
 			}
 		}));
+
+		this.tree.updateOptions({ preserveCollapseStateOnTargets: allBookmarksClasses });
 
 		// save view state
 		this._register(this.storageService.onWillSaveState(() => {

@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/monorepoTreeFileIcon';
+import 'vs/css!./media/bookmarkIcon';
 import { IListAccessibilityProvider } from 'vs/base/browser/ui/list/listWidget';
 import * as DOM from 'vs/base/browser/dom';
 import * as glob from 'vs/base/common/glob';
@@ -59,6 +60,7 @@ import { IEditableData } from 'vs/workbench/common/views';
 import { IEditorInput } from 'vs/workbench/common/editor';
 import { CancellationTokenSource, CancellationToken } from 'vs/base/common/cancellation';
 import { IUriIdentityService } from 'vs/workbench/services/uriIdentity/common/uriIdentity';
+import { IBookmarksManager, bookmarkClass } from 'vs/workbench/contrib/monorepoTree/common/bookmarks';
 
 export class ExplorerDelegate implements IListVirtualDelegate<ExplorerItem> {
 
@@ -260,6 +262,34 @@ class FocusIconRenderer implements IDisposable {
 	}
 }
 
+class BookmarkIconRenderer implements IDisposable {
+	private _iconContainer: HTMLElement;
+
+	constructor(stat: ExplorerItem, bookmarkManager: IBookmarksManager) {
+		this._iconContainer = document.createElement('img');
+		this._iconContainer.id = 'bookmarkIconContainer_' + stat.resource.toString();
+		this._iconContainer.style.paddingRight = '0px';	// By default bookmarks leave some space between the icon and the directory name (in panels)
+		this._iconContainer.onclick = () => {
+			const newType = bookmarkManager.toggleBookmarkType(stat.resource);
+			this._iconContainer.className = bookmarkClass(newType);
+		};
+
+		const bookmarkType = bookmarkManager.getBookmarkType(stat.resource);
+		this._iconContainer.className = bookmarkClass(bookmarkType);
+		if (!bookmarkType) {
+			this._iconContainer.style.visibility = 'hidden';
+		}
+	}
+
+	get iconContainer(): HTMLElement {
+		return this._iconContainer;
+	}
+
+	dispose() {
+		this._iconContainer.remove();
+	}
+}
+
 export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, FuzzyScore, IFileTemplateData>, IListAccessibilityProvider<ExplorerItem>, IDisposable {
 	static readonly ID = 'file';
 
@@ -269,6 +299,8 @@ export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, Fu
 
 	private _onDidChangeActiveDescendant = new EventMultiplexer<void>();
 	readonly onDidChangeActiveDescendant = this._onDidChangeActiveDescendant.event;
+
+	private bookmarksManager: IBookmarksManager | undefined = undefined;
 
 	constructor(
 		private labels: ResourceLabels,
@@ -286,6 +318,10 @@ export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, Fu
 				this.config = this.configurationService.getValue();
 			}
 		});
+	}
+
+	registerBookmarksManager(manager: IBookmarksManager): void {
+		this.bookmarksManager = manager;
 	}
 
 	getWidgetAriaLabel(): string {
@@ -407,6 +443,11 @@ export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, Fu
 			focusIcon.iconContainer.style.opacity = '0';
 		}
 
+		if (this.bookmarksManager) {
+			const bookmarkIcon = new BookmarkIconRenderer(stat, this.bookmarksManager);
+			templateData.label.element.appendChild(bookmarkIcon.iconContainer);
+			disposables.add(bookmarkIcon);
+		}
 
 		disposables.add(focusIcon);
 		disposables.add(prevDisposable);

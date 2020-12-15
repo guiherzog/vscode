@@ -169,6 +169,9 @@ import 'vs/workbench/contrib/monorepoTree/browser/files.contribution';
 // import 'vs/workbench/contrib/files/browser/fileActions.contribution';
 // import 'vs/workbench/contrib/files/browser/files.contribution';
 
+// Bookmarks
+import 'vs/workbench/contrib/monorepoTree/browser/bookmarks.contribution';
+
 // Backup
 import 'vs/workbench/contrib/backup/common/backup.contribution';
 
