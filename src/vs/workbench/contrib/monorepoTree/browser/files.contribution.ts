@@ -44,6 +44,8 @@ import { BreadcrumbObserver } from 'vs/workbench/contrib/monorepoTree/browser/br
 import { IBreadcrumbObserver } from 'vs/workbench/browser/parts/editor/breadcrumbObserver';
 import { BookmarksManager } from 'vs/workbench/contrib/monorepoTree/browser/bookmarksManager';
 import { IBookmarksManager } from 'vs/workbench/contrib/monorepoTree/common/bookmarks';
+import { RecentDirectoriesManager } from 'vs/workbench/contrib/monorepoTree/browser/recentDirectoriesManager';
+import { IRecentDirectoriesManager } from 'vs/workbench/contrib/monorepoTree/common/recentDirectories';
 
 // Viewlet Action
 export class OpenExplorerViewletAction extends ShowViewletAction {
@@ -81,6 +83,7 @@ class FileUriLabelContribution implements IWorkbenchContribution {
 registerSingleton(IExplorerService, ExplorerService, true);
 registerSingleton(IBookmarksManager, BookmarksManager, true);
 registerSingleton(IBreadcrumbObserver, BreadcrumbObserver, true);
+registerSingleton(IRecentDirectoriesManager, RecentDirectoriesManager, true);
 
 const openViewletKb: IKeybindings = {
 	primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KEY_E
