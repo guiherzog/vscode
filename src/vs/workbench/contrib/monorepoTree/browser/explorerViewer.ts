@@ -268,7 +268,7 @@ class BookmarkIconRenderer implements IDisposable {
 	constructor(stat: ExplorerItem, bookmarkManager: IBookmarksManager) {
 		this._iconContainer = document.createElement('img');
 		this._iconContainer.id = 'bookmarkIconContainer_' + stat.resource.toString();
-		this._iconContainer.style.paddingRight = '0px';	// By default bookmarks leave some space between the icon and the directory name (in panels)
+		this._iconContainer.style.paddingRight = '12px';
 		this._iconContainer.onclick = () => {
 			const newType = bookmarkManager.toggleBookmarkType(stat.resource);
 			this._iconContainer.className = bookmarkClass(newType);
@@ -334,9 +334,7 @@ export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, Fu
 
 	renderTemplate(container: HTMLElement): IFileTemplateData {
 		const elementDisposable = Disposable.None;
-		const rowContainer = this.getRowContainerElement(container);
 		const label = this.labels.create(container, { supportHighlights: true });
-		rowContainer.style.left = '-10px';	// Move the whole row to the left so that bookmarks are not covered by the scrollbar
 		return { elementDisposable, label, container };
 	}
 
@@ -445,7 +443,7 @@ export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, Fu
 
 		if (this.bookmarksManager) {
 			const bookmarkIcon = new BookmarkIconRenderer(stat, this.bookmarksManager);
-			templateData.label.element.appendChild(bookmarkIcon.iconContainer);
+			rowContainer.appendChild(bookmarkIcon.iconContainer);
 			disposables.add(bookmarkIcon);
 		}
 
