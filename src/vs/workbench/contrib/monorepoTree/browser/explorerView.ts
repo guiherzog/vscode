@@ -255,7 +255,9 @@ export class ExplorerView extends ViewPane {
 		breadcrumbElement.classList.add('breadcrumb-element');
 
 		DOM.addDisposableListener(breadcrumbElement, DOM.EventType.MOUSE_OVER, () => {
-			breadcrumbElement.classList.replace('breadcrumb-element', 'breadcrumb-element-emphasized');
+			if (breadcrumbElement.nextSibling) {
+				breadcrumbElement.classList.replace('breadcrumb-element', 'breadcrumb-element-emphasized');
+			}
 		});
 
 		DOM.addDisposableListener(breadcrumbElement, DOM.EventType.MOUSE_OUT, () => {

@@ -433,6 +433,9 @@ export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, Fu
 		const focusIcon = new FocusIconRenderer(stat);
 		const contentContainer = this.getContentsContainerElement(templateData.label.element);
 		const rowContainer = this.getRowContainerElement(contentContainer);
+
+		// Moves the indent guide (vertical guideline) to the right, to add the focus item
+		this.shiftIndentGuide(rowContainer);
 		rowContainer.insertBefore(focusIcon.iconContainer, rowContainer.firstChild);
 
 		if (stat.isDirectory) {
@@ -450,6 +453,13 @@ export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, Fu
 		disposables.add(focusIcon);
 		disposables.add(prevDisposable);
 		return disposables;
+	}
+
+	private shiftIndentGuide(rowContainer: HTMLElement) {
+		const indentGuideNodes = rowContainer.getElementsByClassName('monaco-tl-indent');
+		if (indentGuideNodes.length) {
+			(<HTMLElement>indentGuideNodes[0]).style.left = '32px';
+		}
 	}
 
 	private getRowContainerElement(element: HTMLElement): HTMLElement {

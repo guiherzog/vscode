@@ -7,10 +7,10 @@
 	list-style: none;
 	white-space: nowrap;
 	position: relative;
-	left: -20px;
 	top: -10px;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	padding-inline-start: 4px;
 }
 
 .breadcrumb-element {
@@ -21,10 +21,12 @@
 	display: inline;
 	color: #01447e;
 	text-decoration: underline;
+	cursor: pointer;
 }
 
 .parent-button {
 	vertical-align: middle;
 	visibility: hidden;
-	padding-right: 5px;
+	font-size: 12px;
+	margin-right: 4px;
 }

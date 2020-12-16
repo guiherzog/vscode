@@ -9,7 +9,6 @@
 	align-self: center;
 	width: 16px;
 	visibility: hidden;
-	padding-left: 8px; /* The row is moved to the left in renderTemplate(), so the focus icon needs some extra padding */
 }
 
 .monorepo-tree-focus-icon-breadcrumb-aligned {
